@@ -22,6 +22,27 @@ type IssuesInSprintResult struct {
 	Issues []Issue `json:"issues"`
 }
 
+// GetSprint returns the requested sprint.
+//
+// Jira API docs: https://developer.atlassian.com/cloud/jira/software/rest/api-group-sprint/#api-rest-agile-1-0-sprint-sprintid-get
+// Caller must close resp.Body
+func (s *SprintService) GetSprint(ctx context.Context, sprintID int) (*Sprint, *Response, error) {
+	apiEndpoint := fmt.Sprintf("/rest/agile/1.0/sprint/%d", sprintID)
+
+	req, err := s.client.NewRequest(ctx, http.MethodGet, apiEndpoint, nil)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	result := new(Sprint)
+	resp, err := s.client.Do(req, result)
+	if err != nil {
+		err = NewJiraError(resp, err)
+	}
+
+	return result, resp, err
+}
+
 // MoveIssuesToSprint moves issues to a sprint, for a given sprint Id.
 // Issues can only be moved to open or active sprints.
 // The maximum number of issues that can be moved in one operation is 50.
@@ -37,7 +58,6 @@ func (s *SprintService) MoveIssuesToSprint(ctx context.Context, sprintID int, is
 	payload := IssuesWrapper{Issues: issueIDs}
 
 	req, err := s.client.NewRequest(ctx, http.MethodPost, apiEndpoint, payload)
-
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +81,6 @@ func (s *SprintService) GetIssuesForSprint(ctx context.Context, sprintID int) ([
 	apiEndpoint := fmt.Sprintf("rest/agile/1.0/sprint/%d/issue", sprintID)
 
 	req, err := s.client.NewRequest(ctx, http.MethodGet, apiEndpoint, nil)
-
 	if err != nil {
 		return nil, nil, err
 	}
@@ -92,7 +111,6 @@ func (s *SprintService) GetIssue(ctx context.Context, issueID string, options *G
 	apiEndpoint := fmt.Sprintf("rest/agile/1.0/issue/%s", issueID)
 
 	req, err := s.client.NewRequest(ctx, http.MethodGet, apiEndpoint, nil)
-
 	if err != nil {
 		return nil, nil, err
 	}
@@ -107,7 +125,6 @@ func (s *SprintService) GetIssue(ctx context.Context, issueID string, options *G
 
 	issue := new(Issue)
 	resp, err := s.client.Do(req, issue)
-
 	if err != nil {
 		jerr := NewJiraError(resp, err)
 		return nil, resp, jerr
